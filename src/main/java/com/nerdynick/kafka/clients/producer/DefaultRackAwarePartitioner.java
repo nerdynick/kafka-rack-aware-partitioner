@@ -31,7 +31,7 @@ public class DefaultRackAwarePartitioner extends AbstractRackAwarePartitioner {
         if (keyBytes == null) {
             return stickyPartitionCache.partition(topic, cluster);
         }
-        final List<PartitionInfo> availablePartitions = partitionCache.getPartitions(topic, cluster);
+        final List<PartitionInfo> availablePartitions = cluster.availablePartitionsForTopic(topic);
         // hash the keyBytes to choose a partition
         int partition = Utils.toPositive(Utils.murmur2(keyBytes)) % availablePartitions.size();
         return availablePartitions.get(partition).partition();
