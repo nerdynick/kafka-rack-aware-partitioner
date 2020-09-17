@@ -38,10 +38,10 @@ public class DefaultRackAwarePartitioner implements RackAwarePartitioner {
         if (keyBytes == null) {
             return nonKeyedPartitioner.partition(topic, key, keyBytes, value, valueBytes, cluster);
         }
-        final List<PartitionInfo> availablePartitions = nonKeyedPartitioner.getPartitionCache().getAvailablePartitions(topic, cluster, true);
+        final List<PartitionInfo> partitions = nonKeyedPartitioner.getPartitionCache().getPartitions(topic, cluster, true);
         // hash the keyBytes to choose a partition
-        int partition = Utils.toPositive(Utils.murmur2(keyBytes)) % availablePartitions.size();
-        return availablePartitions.get(partition).partition();
+        int partition = Utils.toPositive(Utils.murmur2(keyBytes)) % partitions.size();
+        return partitions.get(partition).partition();
     }
 
     @Override

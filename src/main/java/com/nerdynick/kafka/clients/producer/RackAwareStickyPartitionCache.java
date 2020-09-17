@@ -27,7 +27,7 @@ public class RackAwareStickyPartitionCache {
     }
 
     public int nextPartition(String topic, Cluster cluster, int prevPartition) {
-        List<PartitionInfo> allPartitions = partitionCache.getPartitions(topic, cluster);
+        List<PartitionInfo> allPartitions = partitionCache.getPartitions(topic, cluster, false);
         List<PartitionInfo> availablePartitions = partitionCache.getAvailablePartitions(topic, cluster, false);
         Integer oldPart = indexCache.get(topic);
         Integer newPart = oldPart;

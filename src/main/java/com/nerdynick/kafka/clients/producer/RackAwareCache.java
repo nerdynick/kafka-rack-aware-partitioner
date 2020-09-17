@@ -45,9 +45,14 @@ public class RackAwareCache {
         allPartitionCache.replace(topic, cluster.partitionsForTopic(topic));
     }
 
-    public List<PartitionInfo> getPartitions(final String topic, final Cluster cluster){
-        return allPartitionCache.computeIfAbsent(topic, t->{
+    public List<PartitionInfo> getPartitions(final String topic, final Cluster cluster, final boolean preferedLeaderOnly){
+        final List<PartitionInfo> parts = allPartitionCache.computeIfAbsent(topic, t->{
             return cluster.partitionsForTopic(topic);
-        }).stream().filter(this::filter).collect(Collectors.toList());
+        });
+        if(preferedLeaderOnly){
+            return parts.stream().filter(this::filterPreferedLeader).collect(Collectors.toList());
+        } else {
+            return parts.stream().filter(this::filter).collect(Collectors.toList());
+        }
     }
 }

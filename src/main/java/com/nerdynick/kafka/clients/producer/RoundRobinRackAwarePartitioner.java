@@ -24,7 +24,7 @@ public class RoundRobinRackAwarePartitioner extends AbstractRackAwarePartitioner
 
     @Override
     public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
-        List<PartitionInfo> partitions =  this.partitionCache.getPartitions(topic, cluster);
+        List<PartitionInfo> partitions =  this.partitionCache.getPartitions(topic, cluster, false);
         int nextValue = nextValue(topic);
         List<PartitionInfo> availablePartitions = this.partitionCache.getAvailablePartitions(topic, cluster, false);
         if (!availablePartitions.isEmpty()) {
