@@ -7,34 +7,46 @@ import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.utils.Utils;
 
-public class DefaultRackAwarePartitioner extends AbstractRackAwarePartitioner {
-    private RackAwareStickyPartitionCache stickyPartitionCache;
+/**
+ * A version of DefaultPartitioner that provides logic needed to manage Rack ware production. 
+ * 
+ * @see UniformStickyRackAwarePartitioner for details on Keyless record handling
+ * 
+ * For keyed records, the prefered leader will be checked for rack presence to be within the configure rack.
+ * This to ensure that during a failover that the # of partitions to hash against doesn't change when the leader moves.
+ */
+public class DefaultRackAwarePartitioner implements RackAwarePartitioner {
+    private UniformStickyRackAwarePartitioner nonKeyedPartitioner = new UniformStickyRackAwarePartitioner();
 
     @Override
     public void configure(Map<String, ?> configs) {
-        super.configure(configs);
-        stickyPartitionCache = new RackAwareStickyPartitionCache(partitionCache);
+        nonKeyedPartitioner.configure(configs);
     }
     
     @Override
     public void close() {
+        nonKeyedPartitioner.close();
     }
 
     @Override
     public void onNewBatch(String topic, Cluster cluster, int prevPartition) {
-        super.onNewBatch(topic, cluster, prevPartition);
-        stickyPartitionCache.nextPartition(topic, cluster, prevPartition);
+        nonKeyedPartitioner.onNewBatch(topic, cluster, prevPartition);
     }
 
     @Override
     public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
         if (keyBytes == null) {
-            return stickyPartitionCache.partition(topic, cluster);
+            return nonKeyedPartitioner.partition(topic, key, keyBytes, value, valueBytes, cluster);
         }
-        final List<PartitionInfo> availablePartitions = cluster.availablePartitionsForTopic(topic);
+        final List<PartitionInfo> availablePartitions = nonKeyedPartitioner.getPartitionCache().getAvailablePartitions(topic, cluster, true);
         // hash the keyBytes to choose a partition
         int partition = Utils.toPositive(Utils.murmur2(keyBytes)) % availablePartitions.size();
         return availablePartitions.get(partition).partition();
+    }
+
+    @Override
+    public boolean isRackAware() {
+        return nonKeyedPartitioner.isRackAware();
     }
     
 }

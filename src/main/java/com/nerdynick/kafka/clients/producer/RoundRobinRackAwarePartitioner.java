@@ -5,10 +5,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.kafka.clients.producer.RoundRobinPartitioner;
 import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.utils.Utils;
 
+/**
+ * A round robin partitioner that limits publication to only those partitions who's leader broker exists in a given rack.
+ * Record distribution is not uniform and each record will be placed on different partitions as they come in.
+ * 
+ * @see RoundRobinPartitioner for more details
+ * 
+ * NOTE: Keys are ignored, resulting in like keys not being guranteed to be placed on the same partition.
+ */
 public class RoundRobinRackAwarePartitioner extends AbstractRackAwarePartitioner {
     private final ConcurrentMap<String, AtomicInteger> topicCounterMap = new ConcurrentHashMap<>();
 
@@ -17,7 +26,7 @@ public class RoundRobinRackAwarePartitioner extends AbstractRackAwarePartitioner
     public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
         List<PartitionInfo> partitions =  this.partitionCache.getPartitions(topic, cluster);
         int nextValue = nextValue(topic);
-        List<PartitionInfo> availablePartitions = this.partitionCache.getAvailablePartitions(topic, cluster);
+        List<PartitionInfo> availablePartitions = this.partitionCache.getAvailablePartitions(topic, cluster, false);
         if (!availablePartitions.isEmpty()) {
             int part = Utils.toPositive(nextValue) % availablePartitions.size();
             return availablePartitions.get(part).partition();
